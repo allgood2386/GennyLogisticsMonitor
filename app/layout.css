@@ -1,0 +1,11 @@
+.form-container {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px; /* Adjust the gap between the forms as needed */
+  margin: 20px 0; /* Adjust the margin as needed */
+}
+
+.form-container > div {
+  flex: 1;
+  box-sizing: border-box;
+}

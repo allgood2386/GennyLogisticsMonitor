@@ -56,6 +56,7 @@ export default function RootLayout({
         bestPosition: racerData.Details.Competitor.BestPosition,
         lastLapTime: racerData.Details.Competitor.LastLapTime,
         currentPosition: racerData.Details.Competitor.Position,
+        laps: racerData.Details.Laps
       };
       console.log(results);
       return results;

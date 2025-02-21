@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import "./globals.css";
 import './layout.css'; // Import the new CSS file
-import RaceIdInput from './RaceIdInput';
 import RacerIdInput from './RacerIdInput';
 import ResultsDisplay from './ResultsDisplay';
+import RaceIdSelect from './RaceIdSelect';
 
 export default function RootLayout({
   children,
@@ -17,9 +17,28 @@ export default function RootLayout({
   const [racer2Id, setRacer2Id] = useState('');
   const [racer1Results, setRacer1Results] = useState(null);
   const [racer2Results, setRacer2Results] = useState(null);
+  const [races, setRaces] = useState([]);
 
-  const handleRaceIdSubmit = (id: string) => {
-    setRaceId(id);
+  useEffect(() => {
+    const fetchRaces = async () => {
+      const url = new URL('https://api.race-monitor.com/v2/Common/CurrentRaces');
+      url.searchParams.append('apiToken', process.env.REACT_APP_RACE_MONITOR_API_KEY);
+      const response = await fetch(url.toString(), {
+        method: 'POST'
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const raceData = await response.json();
+      setRaces(raceData.Races);
+    };
+
+    fetchRaces();
+  }, []);
+
+  const handleRaceIdChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setRaceId(event.target.value);
   };
 
   const handleRacer1IdSubmit = async (id: string) => {
@@ -116,7 +135,17 @@ export default function RootLayout({
           <h1>Cream Logistics Monitor</h1>
         </header>
         <main>
-          <RaceIdInput onSubmit={handleRaceIdSubmit} />
+          <div>
+            <label htmlFor="raceId">Select Race:</label>
+            <select id="raceId" value={raceId} onChange={handleRaceIdChange}>
+              <option value="">Select a race</option>
+              {races.map((race) => (
+                <option key={race.Name} value={race.ID}>
+                  {race.Name}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="form-container">
             <div>
               <RacerIdInput onSubmit={handleRacer1IdSubmit} />

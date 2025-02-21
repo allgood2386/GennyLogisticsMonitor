@@ -9,3 +9,10 @@
   flex: 1;
   box-sizing: border-box;
 }
+
+.lap-item {
+  border: 1px solid green;
+  padding: 10px;
+  margin-bottom: 10px;
+  list-style-type: none;
+}

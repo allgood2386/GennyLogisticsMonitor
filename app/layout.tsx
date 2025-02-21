@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import "./globals.css";
 import './layout.css'; // Import the new CSS file
 import RaceIdInput from './RaceIdInput';
@@ -24,55 +24,87 @@ export default function RootLayout({
 
   const handleRacer1IdSubmit = async (id: string) => {
     setRacer1Id(id);
-    const results = await fetchResults(raceId, id);
+    const results = await formatResults(raceId, id);
     setRacer1Results(results);
   };
 
   const handleRacer2IdSubmit = async (id: string) => {
     setRacer2Id(id);
-    const results = await fetchResults(raceId, id);
+    const results = await formatResults(raceId, id);
     setRacer2Results(results);
   };
 
-  const fetchResults = async (raceId: string, racerId: string) => {
+  const fetchRacer = async (raceId: string, racerId: string) => {
+    const url = new URL('https://api.race-monitor.com/v2/Live/GetRacer');
+    url.searchParams.append('raceID', raceId);
+    url.searchParams.append('racerID', racerId);
+    url.searchParams.append('apiToken', process.env.REACT_APP_RACE_MONITOR_API_KEY);
+    const response = await fetch(url.toString(), {
+      method: 'POST'
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
+    const racerData = await response.json();
+    return racerData;
+  };
+
+  const fetchRaceSession = async (raceId: string, racerId: string) => {
+    const url = new URL('https://api.race-monitor.com/v2/Live/GetSession');
+    url.searchParams.append('raceID', raceId);
+    url.searchParams.append('racerID', racerId);
+    url.searchParams.append('apiToken', process.env.REACT_APP_RACE_MONITOR_API_KEY);
+    const response = await fetch(url.toString(), {
+      method: 'POST'
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const SessionData = await response.json();
+    return SessionData;
+  };
+
+  const formatResults = async (raceId: string, racerId: string) => {
     try {
-      const url = new URL('https://api.race-monitor.com/v2/Live/GetRacer');
-      url.searchParams.append('raceID', raceId);
-      url.searchParams.append('racerID', racerId);
-      url.searchParams.append('apiToken', '');
-      const response = await fetch(url.toString(), {
-        method: 'POST'
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      const SessionData = await fetchRaceSession(raceId, racerId);
+      const Racer = await fetchRacer(raceId, racerId);
 
-      const racerData = await response.json();
-      console.log(racerData.Details);
       const results = {
-        bestLap: racerData.Details.Competitor.BestLap,
-        bestLapTime: racerData.Details.Competitor.BestLapTime,
-        bestPosition: racerData.Details.Competitor.BestPosition,
-        lastLapTime: racerData.Details.Competitor.LastLapTime,
-        currentPosition: racerData.Details.Competitor.Position,
-        laps: racerData.Details.Laps
+        sessionName: SessionData.Session.SessionName,
+        currentTime: SessionData.Session.CurrentTime,
+        sessionTime: SessionData.Session.SessionTime,
+        timeToGo: SessionData.Session.TimeToGo,
+        flagStatus: SessionData.Session.FlagStatus,
+        currentPosition: Racer.Details.Competitor.Position,
+        bestPosition: Racer.Details.Competitor.BestPosition,
+        bestLap: Racer.Details.Competitor.BestLap,
+        bestLapTime: Racer.Details.Competitor.BestLapTime,
+        lastLapTime: Racer.Details.Competitor.LastLapTime,
+        laps: Racer.Details.Laps
       };
-      console.log(results);
+
       return results;
     } catch (error) {
-      console.error('Failed to fetch results:', error);
-      return {
-        trackName: 'Error',
-        sessionName: 'Error',
-        currentTime: 'Error',
-        flagStatus: 'Error',
-        position: 0,
-        bestPosition: 0,
-        lastLap: []
+      return { 
+        error: error.message
       };
     }
   };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (raceId && racer1Id) {
+        formatResults(raceId, racer1Id).then(setRacer1Results);
+      }
+      if (raceId && racer2Id) {
+        formatResults(raceId, racer2Id).then(setRacer2Results);
+      }
+    }, 31000); // 31 seconds
+
+    return () => clearInterval(interval); // Cleanup interval on component unmount
+  }, [raceId, racer1Id, racer2Id]);
 
   return (
     <html lang="en">

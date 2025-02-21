@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import "./globals.css";
 import './layout.css'; // Import the new CSS file
-import RacerIdInput from './RacerIdInput';
 import ResultsDisplay from './ResultsDisplay';
 import RaceIdSelect from './RaceIdSelect';
+import RacerIdSelect from './RacerIdSelect';
 
 export default function RootLayout({
   children,
@@ -18,6 +18,7 @@ export default function RootLayout({
   const [racer1Results, setRacer1Results] = useState(null);
   const [racer2Results, setRacer2Results] = useState(null);
   const [races, setRaces] = useState([]);
+  const [racers, setRacers] = useState([]);
 
   useEffect(() => {
     const fetchRaces = async () => {
@@ -37,19 +38,49 @@ export default function RootLayout({
     fetchRaces();
   }, []);
 
+  useEffect(() => {
+    const fetchRacers = async () => {
+      if (raceId) {
+        const url = new URL('https://api.race-monitor.com/v2/Live/GetSession');
+        url.searchParams.append('raceID', raceId);
+        url.searchParams.append('apiToken', process.env.REACT_APP_RACE_MONITOR_API_KEY);
+        const response = await fetch(url.toString(), {
+          method: 'POST'
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const sessionData = await response.json();
+        setRacers(sessionData.Session.Competitors);
+      }
+    };
+
+    fetchRacers();
+  }, [raceId]);
+
   const handleRaceIdChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setRaceId(event.target.value);
+    setRacers([]); // Clear racers when race ID changes
+    setRacer1Id(''); // Clear selected racer 1 ID
+    setRacer2Id(''); // Clear selected racer 2 ID
   };
 
-  const handleRacer1IdSubmit = async (id: string) => {
-    setRacer1Id(id);
-    const results = await formatResults(raceId, id);
+  const handleRacer1IdChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setRacer1Id(event.target.value);
+  };
+
+  const handleRacer2IdChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setRacer2Id(event.target.value);
+  };
+
+  const handleRacer1IdSubmit = async () => {
+    const results = await formatResults(raceId, racer1Id);
     setRacer1Results(results);
   };
 
-  const handleRacer2IdSubmit = async (id: string) => {
-    setRacer2Id(id);
-    const results = await formatResults(raceId, id);
+  const handleRacer2IdSubmit = async () => {
+    const results = await formatResults(raceId, racer2Id);
     setRacer2Results(results);
   };
 
@@ -135,26 +166,22 @@ export default function RootLayout({
           <h1>Cream Logistics Monitor</h1>
         </header>
         <main>
-          <div>
-            <label htmlFor="raceId">Select Race:</label>
-            <select id="raceId" value={raceId} onChange={handleRaceIdChange}>
-              <option value="">Select a race</option>
-              {races.map((race) => (
-                <option key={race.Name} value={race.ID}>
-                  {race.Name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <RaceIdSelect races={races} raceId={raceId} onChange={handleRaceIdChange} />
           <div className="form-container">
-            <div>
-              <RacerIdInput onSubmit={handleRacer1IdSubmit} />
-              {racer1Results && <ResultsDisplay results={racer1Results} />}
-            </div>
-            <div>
-              <RacerIdInput onSubmit={handleRacer2IdSubmit} />
-              {racer2Results && <ResultsDisplay results={racer2Results} />}
-            </div>
+            <RacerIdSelect
+              racers={racers}
+              racerId={racer1Id}
+              onChange={handleRacer1IdChange}
+              onSubmit={handleRacer1IdSubmit}
+              results={racer1Results}
+            />
+            <RacerIdSelect
+              racers={racers}
+              racerId={racer2Id}
+              onChange={handleRacer2IdChange}
+              onSubmit={handleRacer2IdSubmit}
+              results={racer2Results}
+            />
           </div>
           {children}
         </main>

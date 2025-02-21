@@ -1,25 +1,20 @@
 import React from 'react';
 
-interface Race {
-  RaceID: string;
-  RaceName: string;
-}
-
 interface RaceIdSelectProps {
+  races: { RaceID: string; RaceName: string }[];
   raceId: string;
-  races: Race[];
   onChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
-const RaceIdSelect: React.FC<RaceIdSelectProps> = ({ raceId, races, onChange }) => {
+const RaceIdSelect: React.FC<RaceIdSelectProps> = ({ races, raceId, onChange }) => {
   return (
     <div>
       <label htmlFor="raceId">Select Race:</label>
       <select id="raceId" value={raceId} onChange={onChange}>
         <option value="">Select a race</option>
         {races.map((race) => (
-          <option key={raceId} value={race.RaceID}>
-            {race.RaceName}
+          <option key={race.ID} value={race.ID}>
+            {race.Name}
           </option>
         ))}
       </select>

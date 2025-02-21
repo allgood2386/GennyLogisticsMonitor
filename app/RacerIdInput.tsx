@@ -25,7 +25,7 @@ const RacerIdInput: React.FC<RacerIdInputProps> = ({ onSubmit }) => {
         <input
           type="text"
           id="racerId"
-          value={racerId}
+          value={Name}
           onChange={handleChange}
         />
       </div>

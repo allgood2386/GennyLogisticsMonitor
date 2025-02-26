@@ -1,7 +1,8 @@
 import React from 'react';
+import ResultsDisplay from './ResultsDisplay';
 
 interface RacerIdSelectProps {
-  racers: { RacerID: string; Name: string }[];
+  racers: { Number: string; FirstName: string; LastName: string }[];
   racerId: string;
   onChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
   onSubmit: () => void;
@@ -9,14 +10,19 @@ interface RacerIdSelectProps {
 }
 
 const RacerIdSelect: React.FC<RacerIdSelectProps> = ({ racers, racerId, onChange, onSubmit, results }) => {
+    console.log(racers);
+    const Session = racers.Session;
+    console.log(Session);
+    const Competitors = racers.Competitors;
+    console.log(Competitors);
   return (
     <div>
       <label htmlFor="racerId">Select Racer:</label>
       <select id="racerId" value={racerId} onChange={onChange}>
         <option value="">Select a racer</option>
         {Array.isArray(racers) && racers.map((racer) => (
-          <option key={racer.RacerID} value={racer.RacerID}>
-            {racer.Name}
+          <option key={racer.Number} value={racer.Number}>
+            {racer.Number} - {racer.FirstName} {racer.LastName}
           </option>
         ))}
       </select>
@@ -26,4 +32,4 @@ const RacerIdSelect: React.FC<RacerIdSelectProps> = ({ racers, racerId, onChange
   );
 };
 
-export default RacerIdSelect;
+export default React.memo(RacerIdSelect);

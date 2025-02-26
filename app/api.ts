@@ -14,7 +14,7 @@ export const fetchRaces = async (apiToken: string) => {
   return raceData.Races;
 };
 
-export const fetchRacers = async (raceId: string, apiToken: string) => {
+export const fetchSession = async (raceId: string, apiToken: string) => {
   const url = new URL(`${API_BASE_URL}/Live/GetSession`);
   url.searchParams.append('raceID', raceId);
   url.searchParams.append('apiToken', apiToken);
@@ -26,7 +26,7 @@ export const fetchRacers = async (raceId: string, apiToken: string) => {
   }
 
   const sessionData = await response.json();
-  return sessionData.Session.Competitors;
+  return sessionData.Session;
 };
 
 export const fetchRacer = async (raceId: string, racerId: string, apiToken: string) => {
@@ -34,6 +34,7 @@ export const fetchRacer = async (raceId: string, racerId: string, apiToken: stri
   url.searchParams.append('raceID', raceId);
   url.searchParams.append('racerID', racerId);
   url.searchParams.append('apiToken', apiToken);
+
   const response = await fetch(url.toString(), {
     method: 'POST'
   });
@@ -43,20 +44,4 @@ export const fetchRacer = async (raceId: string, racerId: string, apiToken: stri
 
   const racerData = await response.json();
   return racerData;
-};
-
-export const fetchRaceSession = async (raceId: string, racerId: string, apiToken: string) => {
-  const url = new URL(`${API_BASE_URL}/Live/GetSession`);
-  url.searchParams.append('raceID', raceId);
-  url.searchParams.append('racerID', racerId);
-  url.searchParams.append('apiToken', apiToken);
-  const response = await fetch(url.toString(), {
-    method: 'POST'
-  });
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-
-  const sessionData = await response.json();
-  return sessionData;
 };

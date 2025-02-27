@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import "./globals.css";
 import './layout.css'; // Import the new CSS file
-import ResultsDisplay from './ResultsDisplay';
 import RaceIdSelect from './RaceIdSelect';
 import RacerIdSelect from './RacerIdSelect';
 import { fetchRacer, fetchRaces, fetchSession } from './api';
@@ -22,7 +21,7 @@ export default function RootLayout({
   useEffect(() => {
     const fetchRacesData = async () => {
       try {
-        const raceData = await fetchRaces(process.env.REACT_APP_RACE_MONITOR_API_KEY);
+        const raceData = await fetchRaces();
         setRaces(raceData);
       } catch (error) {
         console.error(error);
@@ -36,7 +35,7 @@ export default function RootLayout({
     const fetchRacersData = async () => {
       if (raceId) {
         try {
-          const racerData = await fetchSession(raceId, process.env.REACT_APP_RACE_MONITOR_API_KEY);
+          const racerData = await fetchSession(raceId);
           setRacers(racerData);
         } catch (error) {
           console.error(error);
@@ -58,20 +57,21 @@ export default function RootLayout({
   };
 
   const handleRacer1IdSubmit = async () => {
-    const results = await fetchSession(raceId, racer1Id);
+    const results = await formatResults(raceId, racer1Id); 
     setRacer1Results(results);
   };
 
   const formatResults = async (raceId: string, racerId: string) => {
     try {
-      const sessionData = await fetchSession(raceId, racerId, process.env.REACT_APP_RACE_MONITOR_API_KEY);
-      const racerData = await fetchRacer(raceId, racerId, process.env.REACT_APP_RACE_MONITOR_API_KEY);
+      const sessionData = await fetchSession(raceId, racerId);
+      const racerData = await fetchRacer(raceId, racerId);
+      console.log('here1', racerData);
       const results = {
-        sessionName: sessionData.Session.SessionName,
-        currentTime: sessionData.Session.CurrentTime,
-        sessionTime: sessionData.Session.SessionTime,
-        timeToGo: sessionData.Session.TimeToGo,
-        flagStatus: sessionData.Session.FlagStatus,
+        sessionName: sessionData.SessionName,
+        currentTime: sessionData.CurrentTime,
+        sessionTime: sessionData.SessionTime,
+        timeToGo: sessionData.TimeToGo,
+        flagStatus: sessionData.FlagStatus,
         currentPosition: racerData.Details.Competitor.Position,
         bestPosition: racerData.Details.Competitor.BestPosition,
         bestLap: racerData.Details.Competitor.BestLap,
@@ -79,13 +79,14 @@ export default function RootLayout({
         lastLapTime: racerData.Details.Competitor.LastLapTime,
         laps: racerData.Details.Laps
       };
-
+      console.log('here2', results);
       return results;
     } catch (error) {
       return { 
         error: error.message
       };
     }
+
   };
 
   useEffect(() => {

@@ -28,7 +28,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   return (
     <div>
       <h3>Results</h3>
-      <p>Session Name: {results.sessionName}</p>
+      <p>Sessssssion Name: {results.sessionName}</p>
       <p>Current Time: {results.currentTime}</p>
       <p>Session Time: {results.sessionTime}</p>
       <p>Time To Go: {results.timeToGo}</p>

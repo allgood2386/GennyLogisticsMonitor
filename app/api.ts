@@ -1,8 +1,9 @@
 const API_BASE_URL = 'https://api.race-monitor.com/v2';
+const RACE_MONITOR_KEY: string = (process.env.REACT_APP_RACE_MONITOR_API_KEY as string);
 
-export const fetchRaces = async (apiToken: string) => {
+export const fetchRaces = async () => {
   const url = new URL(`${API_BASE_URL}/Common/CurrentRaces`);
-  url.searchParams.append('apiToken', apiToken);
+  url.searchParams.append('apiToken', RACE_MONITOR_KEY);
   const response = await fetch(url.toString(), {
     method: 'POST'
   });
@@ -14,10 +15,10 @@ export const fetchRaces = async (apiToken: string) => {
   return raceData.Races;
 };
 
-export const fetchSession = async (raceId: string, apiToken: string) => {
+export const fetchSession = async (raceId: string) => {
   const url = new URL(`${API_BASE_URL}/Live/GetSession`);
   url.searchParams.append('raceID', raceId);
-  url.searchParams.append('apiToken', apiToken);
+  url.searchParams.append('apiToken', RACE_MONITOR_KEY);
   const response = await fetch(url.toString(), {
     method: 'POST'
   });
@@ -29,11 +30,11 @@ export const fetchSession = async (raceId: string, apiToken: string) => {
   return sessionData.Session;
 };
 
-export const fetchRacer = async (raceId: string, racerId: string, apiToken: string) => {
+export const fetchRacer = async (raceId: string, racerId: string) => {
   const url = new URL(`${API_BASE_URL}/Live/GetRacer`);
   url.searchParams.append('raceID', raceId);
   url.searchParams.append('racerID', racerId);
-  url.searchParams.append('apiToken', apiToken);
+  url.searchParams.append('apiToken', RACE_MONITOR_KEY);
 
   const response = await fetch(url.toString(), {
     method: 'POST'

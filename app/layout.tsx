@@ -5,6 +5,7 @@ import "./globals.css";
 import './layout.css'; // Import the new CSS file
 import RaceIdSelect from './RaceIdSelect';
 import RacerIdSelect from './RacerIdSelect';
+import LapTimesChart from './LapTimesChart';
 import { fetchRacer, fetchRaces, fetchSession } from './api';
 
 export default function RootLayout({
@@ -65,7 +66,6 @@ export default function RootLayout({
     try {
       const sessionData = await fetchSession(raceId, racerId);
       const racerData = await fetchRacer(raceId, racerId);
-      console.log('here1', racerData);
       const results = {
         sessionName: sessionData.SessionName,
         currentTime: sessionData.CurrentTime,
@@ -79,7 +79,6 @@ export default function RootLayout({
         lastLapTime: racerData.Details.Competitor.LastLapTime,
         laps: racerData.Details.Laps
       };
-      console.log('here2', results);
       return results;
     } catch (error) {
       return { 

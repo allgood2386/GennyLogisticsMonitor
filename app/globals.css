@@ -2,34 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+
 :root {
   --background: #f5f5dc; /* Cream background color */
   --foreground: #02311e; /* Genesee green color */
-  --text-color: #ffffff; /* White text color */
+  --accent: #d72631; /* Genny red accent */
+  --text-color: #02311e; /* Genesee green for text */
+  --card-bg: #fffef6; /* Slightly off-white for cards */
+  --input-bg: #fffef6;
+  --input-border: #02311e;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --text-color: #ffffff;
-  }
-}
+
+/* Remove dark mode override: always use Genny brand palette */
 
 body {
-  color: var(--foreground);
+  color: var(--text-color);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
 
 header, footer {
   background-color: var(--foreground);
-  color: var(--text-color);
+  color: #fff;
   padding: 1rem;
   text-align: center;
   width: 100%;
   position: fixed;
   left: 0;
+  letter-spacing: 0.05em;
 }
 
 header {

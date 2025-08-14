@@ -1,13 +1,12 @@
+version: '3.8'
 services:
-  web:
+  gennylogisticsmonitor:
     build: .
     ports:
       - "3000:3000"
-    volumes:
-     - .:/app
-     - ./node_modules:/app/node_modules
     environment:
-      NODE_ENV: development
-    stdin_open: true
-    tty: true
-    command: npm run dev --turbopack
+      - REACT_APP_RACE_MONITOR_API_KEY=your_api_key_here
+    # Optionally, if you use a .env file, you can add:
+    # env_file:
+    #   - .env
+    restart: unless-stopped

@@ -1,6 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+// Helper to detect rate limit (customize as needed)
+function isRateLimitError(error: any) {
+  if (!error) return false;
+  if (error.status === 429) return true;
+  if (typeof error === 'string' && error.toLowerCase().includes('rate limit')) return true;
+  if (error.message && error.message.toLowerCase().includes('rate limit')) return true;
+  return false;
+}
 import RaceIdSelect from './RaceIdSelect';
 import LapTimesChart from './LapTimesChart';
 import { fetchRacer, fetchRaces, fetchSession } from './api';
@@ -55,21 +63,40 @@ export default function Home() {
   const [races, setRaces] = useState<any[]>([]);
   const [racers, setRacers] = useState<Session | null>(null);
   const [lapCount, setLapCount] = useState<number>(10);
-  // New: update rates in seconds (0 = off)
+  const [raceListRate, setRaceListRate] = useState<number>(30); // new: race/driver list refresh
   const [racer1Rate, setRacer1Rate] = useState<number>(30);
   const [racer2Rate, setRacer2Rate] = useState<number>(30);
+  // Rate limit toggles for each driver
+  const [racer1AutoUpdate, setRacer1AutoUpdate] = useState(true);
+  const [racer2AutoUpdate, setRacer2AutoUpdate] = useState(true);
+  const [showRacer2, setShowRacer2] = useState<boolean>(true); // new: toggle for second driver
 
+  // Rate limit warning state
+  const [rateLimitWarning, setRateLimitWarning] = useState(false);
+
+  // Race/driver list refresh interval
   useEffect(() => {
     const fetchRacesData = async () => {
       try {
         const raceData = await fetchRaces();
         setRaces(raceData);
-      } catch (error) {
-        console.error(error);
+        setRateLimitWarning(false); // clear warning on success
+        // Auto-select first race on initial load
+        if (raceId === '' && raceData && raceData.length > 0) {
+          setRaceId(raceData[0].RaceID || raceData[0].id || raceData[0].raceId || '');
+        }
+      } catch (error: any) {
+        if (isRateLimitError(error)) {
+          setRateLimitWarning(true);
+        }
+        // else ignore, keep current data
       }
     };
     fetchRacesData();
-  }, []);
+    if (raceListRate === 0) return;
+    const interval = setInterval(fetchRacesData, raceListRate * 1000);
+    return () => clearInterval(interval);
+  }, [raceListRate]);
 
   useEffect(() => {
     const fetchRacersData = async () => {
@@ -77,13 +104,21 @@ export default function Home() {
         try {
           const racerData = await fetchSession(raceId);
           setRacers(racerData);
-        } catch (error) {
-          console.error(error);
+          setRateLimitWarning(false); // clear warning on success
+        } catch (error: any) {
+          if (isRateLimitError(error)) {
+            setRateLimitWarning(true);
+          }
+          // else ignore, keep current data
         }
       }
     };
     fetchRacersData();
-  }, [raceId]);
+    if (raceId && raceListRate !== 0) {
+      const interval = setInterval(fetchRacersData, raceListRate * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [raceId, raceListRate]);
 
   const handleRaceIdChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setRaceId(event.target.value);
@@ -134,33 +169,93 @@ export default function Home() {
         lastLapTime: racerData.Details.Competitor.LastLapTime,
         laps: racerData.Details.Laps
       };
+      setRateLimitWarning(false); // clear warning on success
       return results;
-    } catch (error) {
+    } catch (error: any) {
+      if (isRateLimitError(error)) {
+        setRateLimitWarning(true);
+      }
+      // else ignore, keep current data
       return null;
     }
   };
 
   // Racer 1 update interval
   useEffect(() => {
-    if (!raceId || !racer1Id || racer1Rate === 0) return;
+    if (!raceId || !racer1Id || racer1Rate === 0 || !racer1AutoUpdate) return;
     const interval = setInterval(() => {
-      formatResults(raceId, racer1Id).then(setRacer1Results);
+      formatResults(raceId, racer1Id).then(res => {
+        if (res) setRacer1Results(res);
+      });
     }, racer1Rate * 1000);
     return () => clearInterval(interval);
-  }, [raceId, racer1Id, racer1Rate]);
+  }, [raceId, racer1Id, racer1Rate, racer1AutoUpdate]);
 
   // Racer 2 update interval
   useEffect(() => {
-    if (!raceId || !racer2Id || racer2Rate === 0) return;
+    if (!showRacer2 || !raceId || !racer2Id || racer2Rate === 0 || !racer2AutoUpdate) return;
     const interval = setInterval(() => {
-      formatResults(raceId, racer2Id).then(setRacer2Results);
+      formatResults(raceId, racer2Id).then(res => {
+        if (res) setRacer2Results(res);
+      });
     }, racer2Rate * 1000);
     return () => clearInterval(interval);
-  }, [raceId, racer2Id, racer2Rate]);
+  }, [showRacer2, raceId, racer2Id, racer2Rate, racer2AutoUpdate]);
 
   return (
     <div style={{ padding: 24 }}>
-      <h1 style={{ textAlign: 'center', marginBottom: 24 }}>Cream Logistics Monitor</h1>
+      {rateLimitWarning && (
+        <div style={{
+          position: 'relative',
+          width: '100%',
+          marginBottom: 24,
+          background: '#b22222',
+          color: 'white',
+          padding: '18px 32px',
+          borderRadius: 8,
+          border: '3px solid #a00',
+          fontSize: '1.25rem',
+          fontWeight: 'bold',
+          textAlign: 'center',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 24,
+          zIndex: 100
+        }}>
+          <span>⚠️ API rate limit reached. Data not updated. Please wait or adjust refresh rates.</span>
+          <button
+            style={{
+              marginLeft: 12,
+              padding: '6px 18px',
+              background: 'white',
+              color: '#b22222',
+              border: '2px solid #b22222',
+              borderRadius: 4,
+              fontWeight: 'bold',
+              fontSize: '1rem',
+              cursor: 'pointer'
+            }}
+            onClick={() => setRateLimitWarning(false)}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+      <div style={{ marginBottom: 12 }}>
+        <label htmlFor="raceListRate">Race/Driver List Update Rate: </label>
+        <select id="raceListRate" value={raceListRate} onChange={e => setRaceListRate(Number(e.target.value))}>
+          <option value={0}>Off</option>
+          <option value={15}>15s</option>
+          <option value={30}>30s</option>
+          <option value={60}>60s</option>
+          <option value={90}>90s</option>
+          <option value={120}>120s</option>
+          <option value={150}>150s</option>
+          <option value={180}>180s</option>
+        </select>
+      </div>
       <RaceIdSelect races={races} raceId={raceId} onChange={handleRaceIdChange} />
       <div className="form-container" style={{ gap: 16 }}>
         <div>
@@ -173,35 +268,74 @@ export default function Home() {
               </option>
             ))}
           </select>
-          <div style={{ marginTop: 8 }}>
+          <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
             <label htmlFor="racer1Rate">Update Rate: </label>
             <select id="racer1Rate" value={racer1Rate} onChange={e => setRacer1Rate(Number(e.target.value))}>
               <option value={0}>Off</option>
               <option value={15}>15s</option>
               <option value={30}>30s</option>
               <option value={60}>60s</option>
+              <option value={90}>90s</option>
+              <option value={120}>120s</option>
+              <option value={150}>150s</option>
+              <option value={180}>180s</option>
             </select>
+            <label style={{ marginLeft: 12 }}>
+              <input
+                type="checkbox"
+                checked={racer1AutoUpdate}
+                onChange={e => setRacer1AutoUpdate(e.target.checked)}
+                style={{ marginRight: 4 }}
+              />
+              Auto-update
+            </label>
           </div>
         </div>
         <div>
-          <label htmlFor="racer2Id">Compare to Driver:</label>
-          <select id="racer2Id" value={racer2Id} onChange={handleRacer2IdChange}>
-            <option value="">Select a Driver</option>
-            {racers && racers.Competitors && Object.keys(racers.Competitors).map((key) => (
-              <option key={key} value={key}>
-                {racers.Competitors[key].Number} - {racers.Competitors[key].FirstName} {racers.Competitors[key].LastName}
-              </option>
-            ))}
-          </select>
-          <div style={{ marginTop: 8 }}>
-            <label htmlFor="racer2Rate">Update Rate: </label>
-            <select id="racer2Rate" value={racer2Rate} onChange={e => setRacer2Rate(Number(e.target.value))}>
-              <option value={0}>Off</option>
-              <option value={15}>15s</option>
-              <option value={30}>30s</option>
-              <option value={60}>60s</option>
-            </select>
-          </div>
+          <label>
+            <input
+              type="checkbox"
+              checked={showRacer2}
+              onChange={e => setShowRacer2(e.target.checked)}
+              style={{ marginRight: 8 }}
+            />
+            Enable Driver Comparison
+          </label>
+          {showRacer2 && (
+            <>
+              <label htmlFor="racer2Id" style={{ display: 'block', marginTop: 8 }}>Compare to Driver:</label>
+              <select id="racer2Id" value={racer2Id} onChange={handleRacer2IdChange}>
+                <option value="">Select a Driver</option>
+                {racers && racers.Competitors && Object.keys(racers.Competitors).map((key) => (
+                  <option key={key} value={key}>
+                    {racers.Competitors[key].Number} - {racers.Competitors[key].FirstName} {racers.Competitors[key].LastName}
+                  </option>
+                ))}
+              </select>
+              <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <label htmlFor="racer2Rate">Update Rate: </label>
+                <select id="racer2Rate" value={racer2Rate} onChange={e => setRacer2Rate(Number(e.target.value))}>
+                  <option value={0}>Off</option>
+                  <option value={15}>15s</option>
+                  <option value={30}>30s</option>
+                  <option value={60}>60s</option>
+                  <option value={90}>90s</option>
+                  <option value={120}>120s</option>
+                  <option value={150}>150s</option>
+                  <option value={180}>180s</option>
+                </select>
+                <label style={{ marginLeft: 12 }}>
+                  <input
+                    type="checkbox"
+                    checked={racer2AutoUpdate}
+                    onChange={e => setRacer2AutoUpdate(e.target.checked)}
+                    style={{ marginRight: 4 }}
+                  />
+                  Auto-update
+                </label>
+              </div>
+            </>
+          )}
         </div>
         <div>
           <label htmlFor="lapCount">Show last </label>
@@ -228,7 +362,7 @@ export default function Home() {
             <div>Total Laps: {racer1Results.laps?.length || 0}</div>
           </div>
         )}
-        {racer2Results && (
+        {showRacer2 && racer2Results && (
           <div style={{ border: '1px solid #02311e', borderRadius: 8, padding: 16, minWidth: 180 }}>
             <h4>Driver 2</h4>
             <div>Best Lap: {racer2Results.bestLapTime}</div>
@@ -238,7 +372,7 @@ export default function Home() {
         )}
       </div>
       {/* Lap Times Chart */}
-      {(racer1Results?.laps || racer2Results?.laps) && (
+      {(racer1Results?.laps || (showRacer2 && racer2Results?.laps)) && (
         <div style={{ maxWidth: 900, margin: '0 auto 32px auto' }}>
           <LapTimesChart
             laps={Array.from({ length: lapCount }, (_, i) => {
@@ -246,23 +380,23 @@ export default function Home() {
               return {
                 lapNumber: lapIndex + 1,
                 lapTime: racer1Results?.laps?.[lapIndex]?.LapTime || '',
-                lapTime2: racer2Results?.laps?.[lapIndex]?.LapTime || '',
+                lapTime2: showRacer2 ? (racer2Results?.laps?.[lapIndex]?.LapTime || '') : '',
               };
             }).filter(lap => lap.lapTime || lap.lapTime2)}
           />
         </div>
       )}
       {/* Lap Table */}
-      {(racer1Results?.laps || racer2Results?.laps) && (
+      {(racer1Results?.laps || (showRacer2 && racer2Results?.laps)) && (
         <div style={{ maxWidth: 900, margin: '0 auto 32px auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#f5f5dc' }}>
                 <th>Lap</th>
                 <th>Driver 1 Lap Time</th>
-                <th>Driver 2 Lap Time</th>
+                {showRacer2 && <th>Driver 2 Lap Time</th>}
                 <th>Driver 1 Position</th>
-                <th>Driver 2 Position</th>
+                {showRacer2 && <th>Driver 2 Position</th>}
               </tr>
             </thead>
             <tbody>
@@ -273,9 +407,9 @@ export default function Home() {
                   <tr key={i} style={{ borderBottom: '1px solid #ccc' }}>
                     <td>{lapIndex + 1}</td>
                     <td>{racer1Results?.laps?.[lapIndex]?.LapTime || '-'}</td>
-                    <td>{racer2Results?.laps?.[lapIndex]?.LapTime || '-'}</td>
+                    {showRacer2 && <td>{racer2Results?.laps?.[lapIndex]?.LapTime || '-'}</td>}
                     <td>{racer1Results?.laps?.[lapIndex]?.Position || '-'}</td>
-                    <td>{racer2Results?.laps?.[lapIndex]?.Position || '-'}</td>
+                    {showRacer2 && <td>{racer2Results?.laps?.[lapIndex]?.Position || '-'}</td>}
                   </tr>
                 );
               })}

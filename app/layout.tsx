@@ -174,45 +174,6 @@ export default function RootLayout({
           <h1>Cream Logistics Monitor</h1>
         </header>
         <main>
-          <RaceIdSelect races={races} raceId={raceId} onChange={handleRaceIdChange} />
-          <div className="form-container" style={{ gap: 16 }}>
-            <div>
-              <label htmlFor="racer1Id">Select Driver:</label>
-              <select id="racer1Id" value={racer1Id} onChange={handleRacer1IdChange}>
-                <option value="">Select a Driver</option>
-                {racers && racers.Competitors && Object.keys(racers.Competitors).map((key) => (
-                  <option key={key} value={key}>
-                    {racers.Competitors[key].Number} - {racers.Competitors[key].FirstName} {racers.Competitors[key].LastName}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="racer2Id">Compare to Driver:</label>
-              <select id="racer2Id" value={racer2Id} onChange={handleRacer2IdChange}>
-                <option value="">Select a Driver</option>
-                {racers && racers.Competitors && Object.keys(racers.Competitors).map((key) => (
-                  <option key={key} value={key}>
-                    {racers.Competitors[key].Number} - {racers.Competitors[key].FirstName} {racers.Competitors[key].LastName}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="lapCount">Show last </label>
-              <input
-                id="lapCount"
-                type="number"
-                min={1}
-                max={50}
-                value={lapCount}
-                onChange={handleLapCountChange}
-                style={{ width: 60, marginRight: 8 }}
-              />
-              laps
-              <button style={{ marginLeft: 12 }} onClick={handleRefresh}>Refresh</button>
-            </div>
-          </div>
           {/* Summary Cards */}
           <div style={{ display: 'flex', gap: 24, margin: '24px 0' }}>
             {racer1Results && (
